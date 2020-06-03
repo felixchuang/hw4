@@ -31,13 +31,13 @@ Thread t1, t2;
 
 int m_addr = FXOS8700CQ_SLAVE_ADDR1;
 float t[3];
-int tilt, num;
+int num;
 uint8_t data[2], res[6];
 int16_t acc16;
 
 void acc(void);
-void ACC(Arguments *in, Reply *out);
-RPCFunction RPC_ACC(&ACC, "ACC");
+void rpcACC(Arguments *in, Reply *out);
+RPCFunction RPC_ACC(&rpcACC, "rpcACC");
 void FXOS8700CQ_readRegs(int addr, uint8_t * data, int len);
 void FXOS8700CQ_writeRegs(uint8_t * data, int len);
 void xbee_rx_interrupt(void);
@@ -63,6 +63,7 @@ int main()
   xbee_reply[0] = xbee.getc();
   xbee_reply[1] = xbee.getc();
   if(xbee_reply[0] == 'O' && xbee_reply[1] == 'K'){
+    pc.printf("enter AT mode.\r\n");
     xbee_reply[0] = '\0';
     xbee_reply[1] = '\0';
   }
@@ -124,6 +125,7 @@ void reply_messange(char *xbee_reply, char *messange){
   xbee_reply[1] = xbee.getc();
   xbee_reply[2] = xbee.getc();
   if(xbee_reply[1] == 'O' && xbee_reply[2] == 'K'){
+    pc.printf("%s\r\n", messange);
     xbee_reply[0] = '\0';
     xbee_reply[1] = '\0';
     xbee_reply[2] = '\0';
@@ -150,10 +152,10 @@ void FXOS8700CQ_readRegs(int addr, uint8_t * data, int len) {
 void FXOS8700CQ_writeRegs(uint8_t * data, int len) {
    i2c.write(m_addr, (char *)data, len);
 }
-void ACC(Arguments *in, Reply *out)
+void rpcACC(Arguments *in, Reply *out)
 {
-    pc.printf("%d\n%1.4f\n%1.4f\n%1.4f\n%d\n", num, t[0], t[1], t[2], tilt);
-    num = 0;
+  pc.printf("\r\n%d\r\n%1.4f\r\n%1.4f\r\n%1.4f\r\n", num, t[0], t[1], t[2]);
+  num = 0;
 }
 void acc(void)
 {
@@ -173,14 +175,7 @@ void acc(void)
         if (acc16 > UINT14_MAX/2)
         acc16 -= UINT14_MAX;
         t[2] = ((float)acc16) / 4096.0f;
-
-        if(t[2] < 0.85){
-            if(t[0] > 0.5 || t[0] < -0.5 || t[1] > 0.5 || t[1] < -0.5)
-                tilt = 1;
-            else    tilt = 0;
-        }
-        else tilt = 0;
         num++;
-        wait(0.1);
+        wait(1);
     }
 }
